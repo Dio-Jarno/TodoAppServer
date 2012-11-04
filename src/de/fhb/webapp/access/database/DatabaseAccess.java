@@ -18,10 +18,17 @@ import de.fhb.webapp.data.TodoVO;
  */
 public class DatabaseAccess {
 
+	/** local db
 	protected final static String DB = "todoapp";
 	protected final String URL = "jdbc:mysql://localhost:3306/" + DB;
 	protected final String USER = "root";
 	protected final String PASSWORD = "fhb_forensik";
+	*/
+	
+	protected final static String DB = "diojarno_todoapp";
+	protected final String URL = "jdbc:mysql://johnny.heliohost.org:3306/" + DB;
+	protected final String USER = "diojarno_root";
+	protected final String PASSWORD = "rr;D$y]nz@R)";
 	
 	protected final static String DRIVER = "com.mysql.jdbc.Driver";
 	
