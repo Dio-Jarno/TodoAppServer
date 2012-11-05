@@ -13,7 +13,8 @@ import de.fhb.webapp.data.TodoVO;
  * This class creates the connection to the database.
  * 
  * @author Arvid Grunenberg, Thomas Habiger
- * @version 0.2
+ * @version 0.3
+ * @date 04.11.2012
  *
  */
 public class DatabaseAccess {
@@ -133,7 +134,51 @@ public class DatabaseAccess {
 		}
 		return id;
 	}
+	
+	/**
+	 * This method is for inserting a new todo. It creates a SQL statement and sends it to the database.
+	 * 
+	 * @param todo - The given todo, which should insert.
+	 * @param deviceId - The device ID from which the todo is inserted.
+	 * @return The todo's id from the database.
+	 */
+	public int insertTodo(TodoVO todo, String deviceId) {
+		int id = 0;
+		try {
+			connection = DriverManager.getConnection(URL, USER, PASSWORD);
+			Statement statement = connection.createStatement();
+			String insert = "INSERT INTO todo VALUES (" + todo.toString() + ");";
+			int updateCount = statement.executeUpdate(insert, Statement.RETURN_GENERATED_KEYS);
+			System.out.println("SQL-Query ausgeführt: " + insert);
+			if (updateCount > 0) {
+				ResultSet resultKey = statement.getGeneratedKeys();
+				if (resultKey.next()) {
+					id = resultKey.getInt(1);
+				}
+				resultKey.close();
+			}
+			statement.close();
+		} catch (Exception e) {
+			System.out.println("Es konnte keine Verbindung zur Datenbank aufgebaut werden.");
+			e.printStackTrace();
+		} finally {
+			if (connection != null) {
+				try { 
+					connection.close(); 
+				} catch(Exception e) {
+					System.out.println("Die Verbindung zur Datenbank konnte nicht geschlossen werden.");
+					e.printStackTrace(); 
+				}
+			}
+		}
+		return id;
+	}
 
+	/**
+	 * This method is updating a given todo.
+	 * 
+	 * @param todo - The given todo.
+	 */
 	public void updateTodo(TodoVO todo) {
 		try {
 			connection = DriverManager.getConnection(URL, USER, PASSWORD);
@@ -164,11 +209,81 @@ public class DatabaseAccess {
 		}
 	}
 
+	/**
+	 * This method is updating a given todo by a specific device.
+	 * 
+	 * @param todo - The given todo.
+	 * @param deviceId - The device ID from which the todo is updated.
+	 */
+	public void updateTodo(TodoVO todo, String deviceId) {
+		try {
+			connection = DriverManager.getConnection(URL, USER, PASSWORD);
+			Statement statement = connection.createStatement();
+			String update = "UPDATE todo SET name='" + todo.getName() +
+					"',place='" + todo.getPlace() +
+					"',placemark_latitude=" + todo.getPlacemark_latitude() +
+					",placemark_longitude=" + todo.getPlacemark_longitude() +
+					",details='" + todo.getDetails() +
+					"',dueAt='" + todo.getDueAt() +
+					"',done='" + todo.isDone() +
+					"' WHERE id = " + todo.getId();
+			int updateCount = statement.executeUpdate(update);
+			System.out.println("SQL-Query ausgeführt: " + update);
+			statement.close();
+		} catch (Exception e) {
+			System.out.println("Es konnte keine Verbindung zur Datenbank aufgebaut werden.");
+			e.printStackTrace();
+		} finally {
+			if (connection != null) {
+				try { 
+					connection.close(); 
+				} catch(Exception e) {
+					System.out.println("Die Verbindung zur Datenbank konnte nicht geschlossen werden.");
+					e.printStackTrace(); 
+				}
+			}
+		}
+	}
+	
+	/**
+	 * This method deletes a todo by the given id.
+	 * 
+	 * @param id - The given todo ID.
+	 */
 	public void deleteTodo(int id) {
 		try {
 			connection = DriverManager.getConnection(URL, USER, PASSWORD);
 			Statement statement = connection.createStatement();
 			String delete = "DELETE FROM todo WHERE id=" + id;
+			int updateCount = statement.executeUpdate(delete);
+			System.out.println("SQL-Query ausgeführt: " + delete);
+			statement.close();
+		} catch (Exception e) {
+			System.out.println("Es konnte keine Verbindung zur Datenbank aufgebaut werden.");
+			e.printStackTrace();
+		} finally {
+			if (connection != null) {
+				try { 
+					connection.close(); 
+				} catch(Exception e) {
+					System.out.println("Die Verbindung zur Datenbank konnte nicht geschlossen werden.");
+					e.printStackTrace(); 
+				}
+			}
+		}
+	}
+	
+	/**
+	 * This method deletes a todo by the given id and device ID.
+	 * 
+	 * @param id - The given todo ID.
+	 * @param deviceId - The given device ID.
+	 */
+	public void deleteTodo(int id, String deviceId) {
+		try {
+			connection = DriverManager.getConnection(URL, USER, PASSWORD);
+			Statement statement = connection.createStatement();
+			String delete = "DELETE FROM todo WHERE id=" + id + " AND deviceId=" + deviceId;
 			int updateCount = statement.executeUpdate(delete);
 			System.out.println("SQL-Query ausgeführt: " + delete);
 			statement.close();
