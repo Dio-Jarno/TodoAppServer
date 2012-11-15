@@ -19,18 +19,18 @@ import de.fhb.webapp.data.TodoVO;
  */
 public class DatabaseAccess {
 
-	/** local db
+	/** local db */
 	protected final static String DB = "todoapp";
 	protected final String URL = "jdbc:mysql://localhost:3306/" + DB;
 	protected final String USER = "root";
-	protected final String PASSWORD = "fhb_forensik";
-	*/
+	protected final String PASSWORD = "";//"fhb_forensik";
 	
+	/** extern server 
 	protected final static String DB = "diojarno_todoapp";
 	protected final String URL = "jdbc:mysql://johnny.heliohost.org:3306/" + DB;
 	protected final String USER = "diojarno_root";
 	protected final String PASSWORD = "rr;D$y]nz@R)";
-	
+	*/
 	protected final static String DRIVER = "com.mysql.jdbc.Driver";
 	
 	protected Connection connection;
@@ -100,7 +100,7 @@ public class DatabaseAccess {
 	/**
 	 * This method is for inserting a new todo. It creates a SQL statement and sends it to the database.
 	 * 
-	 * @param todo - The given todo, which should insert.
+	 * @param todo - The given todo, which should inserted.
 	 * @return The todo's id from the database.
 	 */
 	public int insertTodo(TodoVO todo) {
