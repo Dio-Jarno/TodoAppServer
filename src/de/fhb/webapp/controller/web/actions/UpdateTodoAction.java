@@ -11,6 +11,7 @@ import org.json.simple.parser.ParseException;
 import de.fhb.webapp.access.database.DatabaseAccess;
 import de.fhb.webapp.commons.web.HttpRequestActionBase;
 import de.fhb.webapp.data.TodoVO;
+import de.fhb.webapp.manager.DeviceManager;
 
 /**
  * Action to manage a HttpServletRequest.
@@ -22,10 +23,12 @@ import de.fhb.webapp.data.TodoVO;
 public class UpdateTodoAction extends HttpRequestActionBase {
 
 	protected DatabaseAccess databaseAccess;
+	protected DeviceManager deviceManager;
 	
 	public UpdateTodoAction() {
 		super();
 		databaseAccess = new DatabaseAccess();
+		deviceManager = new DeviceManager();
 	}
 	
 	/**
@@ -46,6 +49,7 @@ public class UpdateTodoAction extends HttpRequestActionBase {
 					Float.valueOf((String)jObject.get("placemark_latitude")), Float.valueOf((String)jObject.get("placemark_longitude")),
 					(String)jObject.get("place"), (String)jObject.get("dueAt"), Boolean.valueOf((String)jObject.get("done")));
 			databaseAccess.updateTodo(todo);
+			deviceManager.sendPushNotificationToOtherDevices(todo.getId(), (String)jObject.get("deviceId"));
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}

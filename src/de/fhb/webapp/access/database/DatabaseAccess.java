@@ -7,6 +7,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import de.fhb.webapp.data.DeviceVO;
 import de.fhb.webapp.data.TodoVO;
 
 /**
@@ -302,4 +303,42 @@ public class DatabaseAccess {
 		}
 	}
 	
+	/**
+	 * Loads all devices from database.
+	 * 
+	 * @return List<DeviceVO>
+	 */
+	public List<DeviceVO> loadDevices(){
+		List<DeviceVO> devices = new ArrayList<DeviceVO>();
+		DeviceVO device;
+		try {
+			connection = DriverManager.getConnection(URL, USER, PASSWORD);
+			Statement statement = connection.createStatement();
+			String select = "SELECT * FROM devices";
+			ResultSet resultDevices = statement.executeQuery(select);
+			System.out.println("SQL-Query ausgeführt: " + select);
+			while (resultDevices.next()) {
+				device = new DeviceVO();
+				device.setId(resultDevices.getInt("id"));
+				device.setDeviceID(resultDevices.getString("deviceId"));
+				device.setDeviceInfo(resultDevices.getString("deviceInfo"));
+				devices.add(device);
+			}
+			resultDevices.close();
+			statement.close();
+		} catch (Exception e) {
+			System.out.println("Es konnte keine Verbindung zur Datenbank aufgebaut werden.");
+			e.printStackTrace();
+		} finally {
+			if (connection != null) {
+				try { 
+					connection.close(); 
+				} catch(Exception e) {
+					System.out.println("Die Verbindung zur Datenbank konnte nicht geschlossen werden.");
+					e.printStackTrace(); 
+				}
+			}
+		}
+		return devices;
+	}
 }
