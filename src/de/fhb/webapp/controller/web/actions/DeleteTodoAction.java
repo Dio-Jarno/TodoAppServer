@@ -6,7 +6,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import de.fhb.webapp.access.database.DatabaseAccess;
 import de.fhb.webapp.commons.web.HttpRequestActionBase;
-import de.fhb.webapp.data.TodoVO;
 
 /**
  * Action to manage a HttpServletRequest.

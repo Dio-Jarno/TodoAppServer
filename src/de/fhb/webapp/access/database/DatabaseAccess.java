@@ -5,6 +5,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import de.fhb.webapp.data.DeviceVO;
@@ -24,9 +25,9 @@ public class DatabaseAccess {
 	protected final static String DB = "todoapp";
 	protected final String URL = "jdbc:mysql://localhost:3306/" + DB;
 	protected final String USER = "root";
-	protected final String PASSWORD = "";//"fhb_forensik";
+	protected final String PASSWORD = "fhb_forensik";
 	
-	/** extern server 
+	/** extern server
 	protected final static String DB = "diojarno_todoapp";
 	protected final String URL = "jdbc:mysql://johnny.heliohost.org:3306/" + DB;
 	protected final String USER = "diojarno_root";
@@ -59,26 +60,33 @@ public class DatabaseAccess {
 		return true;
 	}
 	
-	public List<TodoVO> loadTodos() {
+	public List<TodoVO> loadTodos(Date timestamp) {
 		List<TodoVO> todos = new ArrayList<TodoVO>();
 		TodoVO todo;
 		try {
 			connection = DriverManager.getConnection(URL, USER, PASSWORD);
 			Statement statement = connection.createStatement();
 			String select = "SELECT * FROM todo";
-			ResultSet resultTodos = statement.executeQuery(select);
+			if (timestamp != null) {
+				select += " WHERE modifiedAt>'" + timestamp + "'";
+			}
 			System.out.println("SQL-Query ausgef체hrt: " + select);
+			ResultSet resultTodos = statement.executeQuery(select);
 			while (resultTodos.next()) {
-				todo = new TodoVO();
-				todo.setId(resultTodos.getInt("id"));
-				todo.setName(resultTodos.getString("name"));
-				todo.setPlace(resultTodos.getString("place"));
-				todo.setPlacemark_latitude(resultTodos.getFloat("placemark_latitude"));
-				todo.setPlacemark_longitude(resultTodos.getFloat("placemark_longitude"));
-				todo.setDetails(resultTodos.getString("details"));
-				todo.setDueAt(resultTodos.getString("dueAt"));
-				todo.setDone(resultTodos.getBoolean("done"));
-				todos.add(todo);
+				if (!resultTodos.getBoolean("isDeleted")) {
+					todo = new TodoVO();
+					todo.setId(resultTodos.getInt("id"));
+					todo.setName(resultTodos.getString("name"));
+					todo.setPlace(resultTodos.getString("place"));
+					todo.setPlacemark_latitude(resultTodos.getFloat("placemark_latitude"));
+					todo.setPlacemark_longitude(resultTodos.getFloat("placemark_longitude"));
+					todo.setRadius(resultTodos.getInt("radius"));
+					todo.setDetails(resultTodos.getString("details"));
+					todo.setDueAt(resultTodos.getString("dueAt"));
+					todo.setModifiedAt(resultTodos.getTimestamp("modifiedAt"));
+					todo.setDone(resultTodos.getBoolean("done"));
+					todos.add(todo);
+				}
 			}
 			resultTodos.close();
 			statement.close();
@@ -110,47 +118,8 @@ public class DatabaseAccess {
 			connection = DriverManager.getConnection(URL, USER, PASSWORD);
 			Statement statement = connection.createStatement();
 			String insert = "INSERT INTO todo VALUES (" + todo.toString() + ");";
-			int updateCount = statement.executeUpdate(insert, Statement.RETURN_GENERATED_KEYS);
 			System.out.println("SQL-Query ausgef체hrt: " + insert);
-			if (updateCount > 0) {
-				ResultSet resultKey = statement.getGeneratedKeys();
-				if (resultKey.next()) {
-					id = resultKey.getInt(1);
-				}
-				resultKey.close();
-			}
-			statement.close();
-		} catch (Exception e) {
-			System.out.println("Es konnte keine Verbindung zur Datenbank aufgebaut werden.");
-			e.printStackTrace();
-		} finally {
-			if (connection != null) {
-				try { 
-					connection.close(); 
-				} catch(Exception e) {
-					System.out.println("Die Verbindung zur Datenbank konnte nicht geschlossen werden.");
-					e.printStackTrace(); 
-				}
-			}
-		}
-		return id;
-	}
-	
-	/**
-	 * This method is for inserting a new todo. It creates a SQL statement and sends it to the database.
-	 * 
-	 * @param todo - The given todo, which should insert.
-	 * @param deviceId - The device ID from which the todo is inserted.
-	 * @return The todo's id from the database.
-	 */
-	public int insertTodo(TodoVO todo, String deviceId) {
-		int id = 0;
-		try {
-			connection = DriverManager.getConnection(URL, USER, PASSWORD);
-			Statement statement = connection.createStatement();
-			String insert = "INSERT INTO todo VALUES (" + todo.toString() + ");";
 			int updateCount = statement.executeUpdate(insert, Statement.RETURN_GENERATED_KEYS);
-			System.out.println("SQL-Query ausgef체hrt: " + insert);
 			if (updateCount > 0) {
 				ResultSet resultKey = statement.getGeneratedKeys();
 				if (resultKey.next()) {
@@ -179,8 +148,11 @@ public class DatabaseAccess {
 	 * This method is updating a given todo.
 	 * 
 	 * @param todo - The given todo.
+	 * @result The count of updated todos. It has to be 1, because the todo's id is unique.
+	 * A count of 0 means the given todo was not found in the database.
 	 */
-	public void updateTodo(TodoVO todo) {
+	public int updateTodo(TodoVO todo) {
+		int updateCount = 0;
 		try {
 			connection = DriverManager.getConnection(URL, USER, PASSWORD);
 			Statement statement = connection.createStatement();
@@ -188,12 +160,14 @@ public class DatabaseAccess {
 					"',place='" + todo.getPlace() +
 					"',placemark_latitude=" + todo.getPlacemark_latitude() +
 					",placemark_longitude=" + todo.getPlacemark_longitude() +
+					",radius=" + todo.getRadius() +
 					",details='" + todo.getDetails() +
 					"',dueAt='" + todo.getDueAt() +
+					"',modifiedAt='" + todo.getModifiedAtAsSQLString() +
 					"',done='" + todo.isDone() +
 					"' WHERE id = " + todo.getId();
-			int updateCount = statement.executeUpdate(update);
 			System.out.println("SQL-Query ausgef체hrt: " + update);
+			updateCount = statement.executeUpdate(update);
 			statement.close();
 		} catch (Exception e) {
 			System.out.println("Es konnte keine Verbindung zur Datenbank aufgebaut werden.");
@@ -208,56 +182,35 @@ public class DatabaseAccess {
 				}
 			}
 		}
+		return updateCount;
 	}
-
+	
 	/**
-	 * This method is updating a given todo by a specific device.
+	 * This method deletes a todo (sets isDeleted=1) by the given todo.
 	 * 
 	 * @param todo - The given todo.
-	 * @param deviceId - The device ID from which the todo is updated.
+	 * @result The count of deleted todos. It has to be 1, because the todo's id is unique.
+	 * A count of 0 means the given todo was not found in the database.
 	 */
-	public void updateTodo(TodoVO todo, String deviceId) {
-		try {
-			connection = DriverManager.getConnection(URL, USER, PASSWORD);
-			Statement statement = connection.createStatement();
-			String update = "UPDATE todo SET name='" + todo.getName() +
-					"',place='" + todo.getPlace() +
-					"',placemark_latitude=" + todo.getPlacemark_latitude() +
-					",placemark_longitude=" + todo.getPlacemark_longitude() +
-					",details='" + todo.getDetails() +
-					"',dueAt='" + todo.getDueAt() +
-					"',done='" + todo.isDone() +
-					"' WHERE id = " + todo.getId();
-			int updateCount = statement.executeUpdate(update);
-			System.out.println("SQL-Query ausgef체hrt: " + update);
-			statement.close();
-		} catch (Exception e) {
-			System.out.println("Es konnte keine Verbindung zur Datenbank aufgebaut werden.");
-			e.printStackTrace();
-		} finally {
-			if (connection != null) {
-				try { 
-					connection.close(); 
-				} catch(Exception e) {
-					System.out.println("Die Verbindung zur Datenbank konnte nicht geschlossen werden.");
-					e.printStackTrace(); 
-				}
-			}
-		}
+	public int deleteTodo(TodoVO todo) {
+		return deleteTodo(todo.getId());
 	}
 	
 	/**
-	 * This method deletes a todo by the given id.
+	 * This method deletes a todo (sets isDeleted=1) by the given id.
 	 * 
 	 * @param id - The given todo ID.
+	 * @result The count of deleted todos. It has to be 1, because the todo's id is unique.
+	 * A count of 0 means the given todo was not found in the database.
 	 */
-	public void deleteTodo(int id) {
+	public int deleteTodo(int id) {
+		int updateCount = 0;
 		try {
 			connection = DriverManager.getConnection(URL, USER, PASSWORD);
 			Statement statement = connection.createStatement();
-			String delete = "DELETE FROM todo WHERE id=" + id;
-			int updateCount = statement.executeUpdate(delete);
+			String delete = "UPDATE todo SET isDeleted=1 WHERE id=" + id;
 			System.out.println("SQL-Query ausgef체hrt: " + delete);
+			updateCount = statement.executeUpdate(delete);
 			statement.close();
 		} catch (Exception e) {
 			System.out.println("Es konnte keine Verbindung zur Datenbank aufgebaut werden.");
@@ -272,35 +225,7 @@ public class DatabaseAccess {
 				}
 			}
 		}
-	}
-	
-	/**
-	 * This method deletes a todo by the given id and device ID.
-	 * 
-	 * @param id - The given todo ID.
-	 * @param deviceId - The given device ID.
-	 */
-	public void deleteTodo(int id, String deviceId) {
-		try {
-			connection = DriverManager.getConnection(URL, USER, PASSWORD);
-			Statement statement = connection.createStatement();
-			String delete = "DELETE FROM todo WHERE id=" + id + " AND deviceId=" + deviceId;
-			int updateCount = statement.executeUpdate(delete);
-			System.out.println("SQL-Query ausgef체hrt: " + delete);
-			statement.close();
-		} catch (Exception e) {
-			System.out.println("Es konnte keine Verbindung zur Datenbank aufgebaut werden.");
-			e.printStackTrace();
-		} finally {
-			if (connection != null) {
-				try { 
-					connection.close(); 
-				} catch(Exception e) {
-					System.out.println("Die Verbindung zur Datenbank konnte nicht geschlossen werden.");
-					e.printStackTrace(); 
-				}
-			}
-		}
+		return updateCount;
 	}
 	
 	/**
@@ -308,15 +233,15 @@ public class DatabaseAccess {
 	 * 
 	 * @return List<DeviceVO>
 	 */
-	public List<DeviceVO> loadDevices(){
+	public List<DeviceVO> loadDevices() {
 		List<DeviceVO> devices = new ArrayList<DeviceVO>();
 		DeviceVO device;
 		try {
 			connection = DriverManager.getConnection(URL, USER, PASSWORD);
 			Statement statement = connection.createStatement();
 			String select = "SELECT * FROM devices";
+			System.out.println("SQL-Query ausgef체hrt: " + select);
 			ResultSet resultDevices = statement.executeQuery(select);
-			System.out.println("SQL-Query ausgef웘rt: " + select);
 			while (resultDevices.next()) {
 				device = new DeviceVO();
 				device.setId(resultDevices.getInt("id"));
@@ -341,4 +266,11 @@ public class DatabaseAccess {
 		}
 		return devices;
 	}
+	
+	public int insertDevice(DeviceVO device) {
+		int updateCount = 0;
+		
+		return updateCount;
+	}
+	
 }

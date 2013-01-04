@@ -1,9 +1,8 @@
 package de.fhb.webapp.manager;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import de.fhb.webapp.access.database.DatabaseAccess; 
+import de.fhb.webapp.access.database.DatabaseAccess;
 import de.fhb.webapp.data.DeviceVO;
 
 /**
@@ -19,10 +18,9 @@ public class DeviceManager {
 	protected DatabaseAccess databaseAccess;
 	
 	/**
-	 * @param id - Id of the todo which should be notified to the other devices.
 	 * @param deviceId - Id of the the device where the todo changes comes from.
 	 */
-	public void sendPushNotificationToOtherDevices(int id, String deviceId){
+	public void sendPushNotificationToOtherDevices(String deviceId){
 		databaseAccess = new DatabaseAccess();
 		List<DeviceVO> devices = databaseAccess.loadDevices();
 		devices.remove(deviceId);

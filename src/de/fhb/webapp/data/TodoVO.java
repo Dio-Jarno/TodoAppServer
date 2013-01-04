@@ -1,5 +1,10 @@
 package de.fhb.webapp.data;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+
 public class TodoVO {
 	
 	protected int id;
@@ -8,7 +13,9 @@ public class TodoVO {
 	protected float placemark_latitude;
 	protected float placemark_longitude;
 	protected String place;
+	protected int radius;
 	protected String dueAt;
+	protected Date modifiedAt;
 	protected boolean done;
 	
 	public TodoVO() {
@@ -18,7 +25,9 @@ public class TodoVO {
 		this.placemark_latitude = 0.0f;
 		this.placemark_longitude = 0.0f;
 		this.place = "";
+		this.radius = 0;
 		this.dueAt = "";
+		this.modifiedAt = null;
 		done = false;
 	}
 	
@@ -27,7 +36,7 @@ public class TodoVO {
 		this.name = name;
 	}
 	
-	public TodoVO(int id, String name, String details, float placemark_latitude, float placemark_longitude, String place, String dueAt, boolean done) {
+	public TodoVO(int id, String name, String details, float placemark_latitude, float placemark_longitude, String place, int radius, String dueAt, Date modifiedAt, boolean done) {
 		super();
 		this.id = id;
 		this.name = name;
@@ -35,10 +44,15 @@ public class TodoVO {
 		this.placemark_latitude = placemark_latitude;
 		this.placemark_longitude = placemark_longitude;
 		this.place = place;
+		this.radius = radius;
 		this.dueAt = dueAt;
+		this.modifiedAt = modifiedAt;
 		this.done = done;
 	}
 	
+	/**
+	 * Represents the todo as a string for sql insert query. The order must be exactly the same as in the database!
+	 */
 	public String toString() {
 		StringBuffer values = new StringBuffer();
 		values.append(this.getId());
@@ -56,7 +70,12 @@ public class TodoVO {
 		values.append(this.getDueAt());
 		values.append("','");
 		values.append(this.isDone());
-		values.append("'");
+		values.append("',");
+		values.append(this.getRadius());
+		values.append(",");
+		values.append(0);
+		values.append(",");
+		values.append(this.getModifiedAtAsSQLString());
 		return values.toString();
 	}
 
@@ -108,12 +127,36 @@ public class TodoVO {
 		this.place = place;
 	}
 	
+	public int getRadius() {
+		return radius;
+	}
+
+	public void setRadius(int radius) {
+		this.radius = radius;
+	}
+
 	public String getDueAt() {
 		return dueAt;
 	}
 	
 	public void setDueAt(String dueAt) {
 		this.dueAt = dueAt;
+	}
+
+	public Date getModifiedAt() {
+		return modifiedAt;
+	}
+
+	public void setModifiedAt(Date modifiedAt) {
+		this.modifiedAt = modifiedAt;
+	}
+
+	public String getModifiedAtAsSQLString() {
+		if (modifiedAt != null) {
+			DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+			return formatter.format(modifiedAt);
+		}
+		return "null";
 	}
 
 	public boolean isDone() {
@@ -123,5 +166,6 @@ public class TodoVO {
 	public void setDone(boolean done) {
 		this.done = done;
 	}
+
 
 }

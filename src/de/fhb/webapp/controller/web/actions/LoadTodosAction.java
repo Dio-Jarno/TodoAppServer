@@ -1,6 +1,10 @@
 package de.fhb.webapp.controller.web.actions;
 
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 import javax.servlet.ServletException;
@@ -38,9 +42,20 @@ public class LoadTodosAction extends HttpRequestActionBase {
 	 * @throws ServletException When the action cannot forward to the page, i.e. the site is not availably.
      */
 	
+	@SuppressWarnings("unchecked")
 	@Override
 	public void perform(HttpServletRequest request, HttpServletResponse response) throws ServletException {
-		List<TodoVO> todos = databaseAccess.loadTodos();
+		String timestampString = request.getParameter("timestamp");
+		Date timestamp = null;
+		if (timestampString != null) {
+			DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+			try {
+				timestamp = formatter.parse(timestampString);
+			} catch (ParseException e) {
+				e.printStackTrace();
+			}
+		}
+		List<TodoVO> todos = databaseAccess.loadTodos(timestamp);
 		JSONArray jsonArray = new JSONArray();
 		JSONObject json;
 		if (todos != null) {
@@ -54,8 +69,10 @@ public class LoadTodosAction extends HttpRequestActionBase {
 					json.put("place", todo.getPlace());
 					json.put("placemark_latitude", todo.getPlacemark_latitude());
 					json.put("placemark_longitude", todo.getPlacemark_longitude());
+					json.put("radius", todo.getRadius());
 					json.put("details", todo.getDetails());
 					json.put("dueAt", todo.getDueAt());
+					json.put("modifiedAt", todo.getModifiedAtAsSQLString());
 					json.put("done", todo.isDone());
 					jsonArray.add(json);
 				}
